@@ -1,0 +1,27 @@
+<odoo>
+    <record id="view_grab_integration_form" model="ir.ui.view">
+        <field name="name">grab.integration.form</field>
+        <field name="model">grab.integration</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_test_grab_connection" type="object" string="Test Grab Connection" class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_grab_integration" model="ir.actions.act_window">
+        <field name="name">Grab Integration</field>
+        <field name="res_model">grab.integration</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_grab_integration_root" name="Grab Integration" sequence="100"/>
+    <menuitem id="menu_grab_integration" name="Grab Test" parent="menu_grab_integration_root" action="action_grab_integration" sequence="10"/>
+</odoo>
