@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_grab_menu,access_grab_menu,model_grab_menu,,1,1,1,1
+access_grab_menu_section,access_grab_menu_section,model_grab_menu_section,,1,1,1,1
+access_grab_menu_category,access_grab_menu_category,model_grab_menu_category,,1,1,1,1
+access_grab_menu_item,access_grab_menu_item,model_grab_menu_item,,1,1,1,1
+access_grab_order,access_grab_order,model_grab_order,,1,1,1,1
+
+access_grab_order,access_grab_order,model_grab_order,base.group_system,1,1,1,1
+access_grab_order_line,access_grab_order_line,model_grab_order_line,base.group_system,1,1,1,1
+access_grab_order_campaign,access_grab_order_campaign,model_grab_order_campaign,base.group_system,1,1,1,1
+access_grab_order_promo,access_grab_order_promo,model_grab_order_promo,base.group_system,1,1,1,1
+access_grab_menu_modifier_group,grab.menu.modifier.group,model_grab_menu_modifier_group,,1,1,1,1
+access_grab_menu_modifier,grab.menu.modifier,model_grab_menu_modifier,,1,1,1,1
+
+access_grab_order_ready_time_wizard,access_grab_order_ready_time_wizard,model_grab_order_ready_time_wizard,,1,1,1,1
+access_grab_order_ready_time_wizard,access_grab_order_ready_time_wizard,model_grab_order_ready_time_wizard,base.group_user,1,1,1,1

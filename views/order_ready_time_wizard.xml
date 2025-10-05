@@ -1,0 +1,35 @@
+<odoo>
+    <!-- 向导表单视图 -->
+    <record id="view_grab_order_ready_time_wizard" model="ir.ui.view">
+        <field name="name">grab.order.ready.time.wizard.form</field>
+        <field name="model">grab.order.ready.time.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Update Ready Time">
+                <group>
+                    <field name="order_id" readonly="1"/>
+                    <field name="new_order_ready_time" required="1"/>
+                </group>
+                <footer>
+                    <button string="Update Ready Time" type="object" name="action_update_ready_time" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- 打开向导的动作（被按钮 %(...)d 引用） -->
+    <record id="action_grab_order_ready_time_wizard" model="ir.actions.act_window">
+        <field name="name">Update Ready Time</field>
+        <field name="res_model">grab.order.ready.time.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_grab_order_ready_time_wizard"/>
+        <field name="target">new</field>
+        <!-- 让向导默认带上当前订单和一个时间默认值 -->
+        <field name="context">
+            {
+                'default_order_id': active_id,
+                'default_new_order_ready_time': context.get('scheduled_time') or context.get('order_time') or False
+            }
+        </field>
+    </record>
+</odoo>

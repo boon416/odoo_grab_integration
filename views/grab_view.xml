@@ -1,0 +1,56 @@
+<odoo>
+    <!-- Grab Data list view -->
+    <record id="view_list_grab_data" model="ir.ui.view">
+        <field name="name">grab.data.list</field>
+        <field name="model">grab.data</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="menu_item"/>
+                <field name="price"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Grab Data form view -->
+    <record id="view_form_grab_data" model="ir.ui.view">
+        <field name="name">grab.data.form</field>
+        <field name="model">grab.data</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="name"/>
+                    <field name="menu_item"/>
+                    <field name="price"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- Grab Data search view -->
+    <record id="view_grab_data_search" model="ir.ui.view">
+        <field name="name">grab.data.search</field>
+        <field name="model">grab.data</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="menu_item"/>
+                <filter name="expensive" string="Price > 10" domain="[('price','>',10)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Grab Data action -->
+    <record id="action_grab_data" model="ir.actions.act_window">
+        <field name="name">Grab Data</field>
+        <field name="res_model">grab.data</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_list_grab_data"/>
+        <field name="search_view_id" ref="view_grab_data_search"/>
+    </record>
+
+    <!-- 顶级菜单：Grab Data -->
+    <menuitem id="menu_grab_data_root"
+              name="Grab Data"
+              action="action_grab_data"
+              sequence="10"/>
+</odoo>

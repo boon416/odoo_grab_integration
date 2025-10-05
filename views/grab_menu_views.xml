@@ -1,0 +1,517 @@
+<odoo>
+    <!-- grab.menu views -->
+    <record id="view_list_grab_menu" model="ir.ui.view">
+        <field name="name">grab.menu.list</field>
+        <field name="model">grab.menu</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="merchant_id"/>
+                <field name="currency_code"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_form_grab_menu" model="ir.ui.view">
+        <field name="name">grab.menu.form</field>
+        <field name="model">grab.menu</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_activate_grab" type="object" string="Activate with Grab" class="btn-secondary"/>
+                    <button name="push_menu_to_grab" type="object" string="Push Menu to Grab" class="btn-primary"/>
+                </header>
+                <group>
+                    <field name="name"/>
+                    <field name="merchant_id"/>
+                    <field name="partner_merchant_id"/>
+                    <field name="currency_code"/>
+                    <field name="currency_symbol"/>
+                    <field name="currency_exponent"/>
+                </group>
+                <notebook>
+                    <page string="Sections">
+                        <field name="section_ids">
+                            <list editable="bottom">
+                                <field name="name"/>
+                                <field name="sequence"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_list_grab_menu_modifier_group" model="ir.ui.view">
+        <field name="name">grab.menu.modifier.group.list</field>
+        <field name="model">grab.menu.modifier.group</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="group_code"/>
+                <field name="item_id"/>
+                <field name="available_status"/>
+                <field name="selection_range_min"/>
+                <field name="selection_range_max"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_form_grab_menu_modifier_group" model="ir.ui.view">
+        <field name="name">grab.menu.modifier.group.form</field>
+        <field name="model">grab.menu.modifier.group</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="name"/>
+                    <field name="group_code"/>
+                    <field name="item_id"/>
+                    <field name="available_status"/>
+                    <field name="selection_range_min"/>
+                    <field name="selection_range_max"/>
+                </group>
+                <notebook>
+                    <page string="Modifiers">
+                        <field name="modifier_ids">
+                            <list editable="bottom">
+                                <field name="name"/>
+                                <field name="modifier_code"/>
+                                <field name="available_status"/>
+                                <field name="price"/>
+                                <field name="barcode"/>
+                            </list>
+                            <form>
+                                <group>
+                                    <field name="name"/>
+                                    <field name="modifier_code"/>
+                                    <field name="available_status"/>
+                                    <field name="price"/>
+                                    <field name="barcode"/>
+                                </group>
+                            </form>
+                        </field>
+                    </page>
+                </notebook>
+            </form>
+        </field>
+    </record>
+
+    <!-- Modifier list & form -->
+    <record id="view_list_grab_menu_modifier" model="ir.ui.view">
+        <field name="name">grab.menu.modifier.list</field>
+        <field name="model">grab.menu.modifier</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="modifier_code"/>
+                <field name="group_id"/>
+                <field name="available_status"/>
+                <field name="price"/>
+                <field name="barcode"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_form_grab_menu_modifier" model="ir.ui.view">
+        <field name="name">grab.menu.modifier.form</field>
+        <field name="model">grab.menu.modifier</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="name"/>
+                    <field name="modifier_code"/>
+                    <field name="group_id"/>
+                    <field name="available_status"/>
+                    <field name="price"/>
+                    <field name="barcode"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- grab.category list and form views -->
+    <record id="view_list_grab_menu_category" model="ir.ui.view">
+        <field name="name">grab.menu.category.list</field>
+        <field name="model">grab.menu.category</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="sequence"/>
+                <field name="section_id"/>
+                <!-- 可以加 item_ids 数量统计, 但Odoo18要额外写compute，不建议加 -->
+            </list>
+        </field>
+    </record>
+    <record id="view_form_grab_menu_category" model="ir.ui.view">
+        <field name="name">grab.menu.category.form</field>
+        <field name="model">grab.menu.category</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <!-- 1. 这里插入 header 按钮 -->
+                    <header>
+                        <button name="action_sync_odoo_products"
+                                type="object"
+                                string="同步Odoo商品"
+                                class="oe_highlight"/>
+                        <button name="action_sync_modifiers_for_all_items"
+                                type="object"
+                                string="同步所有Item的Modifier"
+                                class="oe_highlight"/>
+                    </header>
+                    <group>
+                        <field name="name"/>
+                        <field name="odoo_category_id"/>
+                        <field name="sequence"/>
+                        <field name="section_id"/>
+                    </group>
+                    <notebook>
+                        <page string="Items">
+                            <field name="item_ids">
+                                <list>
+                                    <field name="product_id"/>
+                                    <field name="name"/>
+                                    <field name="price"/>
+                                    <field name="available_status"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Item表单增强，支持 Modifier Groups 嵌套list -->
+    <record id="view_list_grab_menu_item" model="ir.ui.view">
+        <field name="name">grab.menu.item.list</field>
+        <field name="model">grab.menu.item</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="product_id"/>
+                <field name="name"/>
+                <field name="price"/>
+                <field name="product_category_id"/>
+                <field name="available_status"/>
+                <field name="photo" widget="image"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_form_grab_menu_item" model="ir.ui.view">
+        <field name="name">grab.menu.item.form</field>
+        <field name="model">grab.menu.item</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_sync_modifiers_from_attributes"
+                            type="object"
+                            string="同步Modifier"
+                            class="oe_highlight"/>
+                </header>
+                <group>
+                    <field name="product_id"/>
+                    <field name="name"/>
+                    <field name="price"/>
+                    <field name="sequence"/>
+                    <field name="available_status"/>
+                    <field name="product_category_id"/>
+                </group>
+                <notebook>
+                    <page string="Modifier Groups">
+                        <field name="modifier_group_ids">
+                            <list editable="bottom">
+                                <field name="name"/>
+                                <field name="group_code"/>
+                                <field name="available_status"/>
+                                <field name="selection_range_min"/>
+                                <field name="selection_range_max"/>
+                            </list>
+                            <form>
+                                <group>
+                                    <field name="name"/>
+                                    <field name="group_code"/>
+                                    <field name="available_status"/>
+                                    <field name="selection_range_min"/>
+                                    <field name="selection_range_max"/>
+                                </group>
+                                <notebook>
+                                    <page string="Modifiers">
+                                        <field name="modifier_ids">
+                                            <list editable="bottom">
+                                                <field name="name"/>
+                                                <field name="modifier_code"/>
+                                                <field name="available_status"/>
+                                                <field name="price"/>
+                                                <field name="barcode"/>
+                                            </list>
+                                            <form>
+                                                <group>
+                                                    <field name="name"/>
+                                                    <field name="modifier_code"/>
+                                                    <field name="available_status"/>
+                                                    <field name="price"/>
+                                                    <field name="barcode"/>
+                                                </group>
+                                            </form>
+                                        </field>
+                                    </page>
+                                </notebook>
+                            </form>
+                        </field>
+                    </page>
+                </notebook>
+            </form>
+        </field>
+    </record>
+
+    <!-- ...其他 menus 相关视图 ... -->
+
+    <!-- grab.order views -->
+    <record id="view_list_grab_order" model="ir.ui.view">
+        <field name="name">grab.order.list</field>
+        <field name="model">grab.order</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="grab_order_id"/>
+                <field name="short_order_number"/>
+                <field name="merchant_id"/>
+                <field name="payment_type"/>
+                <field name="order_time"/>
+                <field name="order_state"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_form_grab_order" model="ir.ui.view">
+        <field name="name">grab.order.form</field>
+        <field name="model">grab.order</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <header>
+                        <button name="%(action_grab_order_ready_time_wizard)d" string="Update Ready Time" type="action" class="btn-primary"/>
+                        <button name="action_push_order_ready" type="object" string="Mark Ready on Grab" class="btn-primary"/>
+                        <button name="action_push_order_completed" type="object" string="Mark Completed on Grab" class="btn-secondary"/>
+                    </header>
+                    <group>
+                        <field name="grab_order_id"/>
+                        <field name="short_order_number"/>
+                        <field name="merchant_id"/>
+                        <field name="payment_type"/>
+                        <field name="order_time"/>
+                        <field name="submit_time"/>
+                        <field name="complete_time"/>
+                        <field name="scheduled_time"/>
+                        <field name="order_state"/>
+                    </group>
+                    <group>
+                        <!-- 可以放 receiver 相关的JSON字段，或增加计算字段 -->
+                        <field name="receiver"/>
+                        <field name="dine_in"/>
+                    </group>
+                    <group>
+                        <field name="line_ids"/>
+                        <field name="campaign_ids"/>
+                        <field name="promo_ids"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- grab.order.line views -->
+    <record id="view_list_grab_order_line" model="ir.ui.view">
+        <field name="name">grab.order.line.list</field>
+        <field name="model">grab.order.line</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="order_id"/>
+                <field name="item_id"/> <!-- 这里会显示item名字，如果item_id是Many2one-->
+                <field name="modifier_names"/>
+                <field name="quantity"/>
+                <field name="price"/>
+                <field name="tax"/>
+                <field name="specifications"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_form_grab_order_line" model="ir.ui.view">
+        <field name="name">grab.order.line.form</field>
+        <field name="model">grab.order.line</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="order_id"/>
+                    <field name="item_id"/> <!-- 同上，Many2one的话，显示item名字，可以弹出选项-->
+                    <field name="modifier_names"/>
+                    <field name="quantity"/>
+                    <field name="price"/>
+                    <field name="tax"/>
+                    <field name="specifications"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- grab.order.campaign views -->
+    <record id="view_list_grab_order_campaign" model="ir.ui.view">
+        <field name="name">grab.order.campaign.list</field>
+        <field name="model">grab.order.campaign</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="order_id"/>
+                <field name="name"/>
+                <field name="type"/>
+                <field name="deducted_amount"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_form_grab_order_campaign" model="ir.ui.view">
+        <field name="name">grab.order.campaign.form</field>
+        <field name="model">grab.order.campaign</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="order_id"/>
+                    <field name="name"/>
+                    <field name="level"/>
+                    <field name="type"/>
+                    <field name="usage_count"/>
+                    <field name="deducted_amount"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- grab.order.promo views -->
+    <record id="view_list_grab_order_promo" model="ir.ui.view">
+        <field name="name">grab.order.promo.list</field>
+        <field name="model">grab.order.promo</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="order_id"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="promo_amount"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_form_grab_order_promo" model="ir.ui.view">
+        <field name="name">grab.order.promo.form</field>
+        <field name="model">grab.order.promo</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="order_id"/>
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="promo_amount"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+        <!-- ====== Order Status ====== -->
+    <record id="view_graph_grab_order" model="ir.ui.view">
+        <field name="name">grab.order.graph</field>
+        <field name="model">grab.order</field>
+        <field name="arch" type="xml">
+            <graph string="Order Status Statistics" type="bar">
+                <field name="order_state" type="row"/>
+                <field name="id" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="view_search_grab_order" model="ir.ui.view">
+        <field name="name">grab.order.search</field>
+        <field name="model">grab.order</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="order_state"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Menu actions -->
+    <record id="action_grab_menu" model="ir.actions.act_window">
+        <field name="name">Grab Menus</field>
+        <field name="res_model">grab.menu</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_grab_menu_section" model="ir.actions.act_window">
+        <field name="name">Grab Menu Sections</field>
+        <field name="res_model">grab.menu.section</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_grab_menu_category" model="ir.actions.act_window">
+        <field name="name">Grab Menu Categories</field>
+        <field name="res_model">grab.menu.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_grab_menu_item" model="ir.actions.act_window">
+        <field name="name">Grab Menu Items</field>
+        <field name="res_model">grab.menu.item</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_grab_menu_modifier_group" model="ir.actions.act_window">
+        <field name="name">Modifier Groups</field>
+        <field name="res_model">grab.menu.modifier.group</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_grab_menu_modifier" model="ir.actions.act_window">
+        <field name="name">Modifiers</field>
+        <field name="res_model">grab.menu.modifier</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Order actions -->
+    <record id="action_grab_order" model="ir.actions.act_window">
+        <field name="name">Orders</field>
+        <field name="res_model">grab.order</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_grab_order_line" model="ir.actions.act_window">
+        <field name="name">Order Lines</field>
+        <field name="res_model">grab.order.line</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_grab_order_campaign" model="ir.actions.act_window">
+        <field name="name">Campaigns</field>
+        <field name="res_model">grab.order.campaign</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_grab_order_promo" model="ir.actions.act_window">
+        <field name="name">Promos</field>
+        <field name="res_model">grab.order.promo</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_grab_order_ready_time_wizard" model="ir.actions.act_window">
+        <field name="name">Update Order Ready Time</field>
+        <field name="res_model">grab.order.ready.time.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    <record id="action_grab_order_status" model="ir.actions.act_window">
+        <field name="name">Order Status</field>
+        <field name="res_model">grab.order</field>
+        <field name="view_mode">graph,list,form</field>
+        <field name="view_id" ref="view_graph_grab_order"/>
+        <field name="search_view_id" ref="view_search_grab_order"/>
+    </record>
+    <!-- ======== Menus: 菜单结构 ========== -->
+    <menuitem id="menu_grab_dashboard_root" name="Grab Dashboard" sequence="1"/>
+    <!-- Menus分组 -->
+    <menuitem id="menu_grab_menu_root" name="Menus" parent="menu_grab_dashboard_root" sequence="1"/>
+    <menuitem id="menu_grab_menu" name="Menus" parent="menu_grab_menu_root" action="action_grab_menu" sequence="1"/>
+    <menuitem id="menu_grab_section" name="Sections" parent="menu_grab_menu_root" action="action_grab_menu_section" sequence="2"/>
+    <menuitem id="menu_grab_category" name="Categories" parent="menu_grab_menu_root" action="action_grab_menu_category" sequence="3"/>
+    <menuitem id="menu_grab_item" name="Items" parent="menu_grab_menu_root" action="action_grab_menu_item" sequence="4"/>
+    <menuitem id="menu_grab_modifier_group" name="Modifier Groups" parent="menu_grab_menu_root" action="action_grab_menu_modifier_group" sequence="5"/>
+    <menuitem id="menu_grab_modifier" name="Modifiers" parent="menu_grab_menu_root" action="action_grab_menu_modifier" sequence="6"/>
+
+    <!-- Orders分组 -->
+    <menuitem id="menu_grab_order_root" name="Orders" parent="menu_grab_dashboard_root" sequence="2"/>
+    <menuitem id="menu_grab_order" name="Orders" parent="menu_grab_order_root" action="action_grab_order" sequence="1"/>
+    <menuitem id="menu_grab_order_line" name="Order Lines" parent="menu_grab_order_root" action="action_grab_order_line" sequence="2"/>
+    <menuitem id="menu_grab_order_campaign" name="Campaigns" parent="menu_grab_order_root" action="action_grab_order_campaign" sequence="3"/>
+    <menuitem id="menu_grab_order_promo" name="Promos" parent="menu_grab_order_root" action="action_grab_order_promo" sequence="4"/>
+    <menuitem id="menu_grab_order_status" name="Order Status" parent="menu_grab_order_root" action="action_grab_order_status" sequence="5"/>
+</odoo>

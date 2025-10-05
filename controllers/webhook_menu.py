@@ -1,0 +1,261 @@
+# -*- coding: utf-8 -*-
+from odoo import http
+from odoo.http import request
+import json
+
+# 与 categories 里的 sellingTimeID 一致（Grab 示例用 SELLINGTIME-01）
+SELLING_TIME_ID = "SELLINGTIME-01"
+DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+# -----------------------------
+# Helpers
+# -----------------------------
+
+def _icp_get(key, default=None):
+    return request.env['ir.config_parameter'].sudo().get_param(key, default)
+
+def _json_body():
+    # 保险：GET 也可能带 JSON body（某些工具会这样）
+    try:
+        data = request.httprequest.data
+        if not data:
+            return {}
+        return json.loads(data.decode('utf-8'))
+    except Exception:
+        return {}
+
+def _get_param(*names, default=""):
+    """兼容参数命名：querystring 优先，缺失时再尝试 JSON body"""
+    # 1) query string
+    q = request.httprequest.args
+    for n in names:
+        v = q.get(n)
+        if v:
+            return v
+    # 2) JSON body（可选）
+    body = _json_body()
+    for n in names:
+        v = body.get(n)
+        if v:
+            return v
+    return default
+
+def _int_cents(x):
+    try:
+        return int(round(float(x or 0.0) * 100))
+    except Exception:
+        return 0
+
+def _build_modifier_groups(item):
+    mgs = []
+    for mg in item.modifier_group_ids:
+        mgs.append({
+            "id": mg.group_code or f"MG-{mg.id}",
+            "name": mg.name,
+            "sequence": getattr(mg, 'sequence', mg.id) or mg.id,
+            "availableStatus": getattr(mg, 'available_status', None) or "AVAILABLE",
+            "selectionRangeMin": getattr(mg, 'selection_range_min', None) or 0,
+            "selectionRangeMax": getattr(mg, 'selection_range_max', None) or 1,
+            "modifiers": [{
+                "id": m.modifier_code or f"MODI-{m.id}",
+                "name": m.name,
+                "sequence": getattr(m, 'sequence', m.id) or m.id,
+                "availableStatus": getattr(m, 'available_status', None) or "AVAILABLE",
+                "price": _int_cents(getattr(m, 'price', 0.0)),
+            } for m in mg.modifier_ids]
+        })
+    return mgs
+
+def _build_categories_from_db(menu):
+    """把现有 section → category → item 扁平成 selling-time-based categories；"""
+    categories = []
+    seen_cat = set()
+    for section in menu.section_ids:
+        for cat in section.category_ids:
+            cat_id = f"CATEGORY-{cat.id}"
+            if cat_id in seen_cat:
+                continue
+            seen_cat.add(cat_id)
+
+            items = []
+            seen_item = set()
+            for it in cat.item_ids:
+                it_id = f"ITEM-{it.id}"
+                if it_id in seen_item:
+                    continue
+                seen_item.add(it_id)
+
+                desc = getattr(it, 'website_description', "") or ""
+                photo_url = getattr(it, 'photo_url', "") or ""
+                if not photo_url:
+                    pt = getattr(it, 'product_id', False) and it.product_id or False
+                    if pt and pt.image_1920:
+                        base = _icp_get('web.base.url', '')
+                        photo_url = f"{base}/web/image/product.template/{pt.id}/image_1920"
+
+                items.append({
+                    "id": it_id,
+                    "name": it.name,
+                    "sequence": getattr(it, 'sequence', None) or 1,
+                    "availableStatus": getattr(it, 'available_status', None) or "AVAILABLE",
+                    "price": _int_cents(getattr(it, 'price', 0.0)),
+                    "description": desc,
+                    "photos": [photo_url] if photo_url else [],
+                    "modifierGroups": _build_modifier_groups(it),
+                })
+
+            categories.append({
+                "id": cat_id,
+                "name": cat.name,
+                "sequence": getattr(cat, 'sequence', None) or 1,
+                "availableStatus": "AVAILABLE",
+                "sellingTimeID": SELLING_TIME_ID,  # 指向有效 sellingTime
+                "items": items,
+            })
+    return categories
+
+def _build_placeholder_category():
+    """当没有任何 category/item 时，构造占位类目+商品（不改数据库，只作为 payload 占位）"""
+    Product = request.env['product.template'].sudo()
+    p = Product.search([('website_published', '=', True)], limit=1)
+    name = p.name if p else "Sample Item"
+    price_cents = _int_cents(p.list_price if p else 1.00)
+    photo_url = ""
+    if p and p.image_1920:
+        base = _icp_get('web.base.url', '')
+        photo_url = f"{base}/web/image/product.template/{p.id}/image_1920"
+    return [{
+        "id": "CATEGORY-PLACEHOLDER",
+        "name": "Placeholder",
+        "sequence": 1,
+        "availableStatus": "AVAILABLE",
+        "sellingTimeID": SELLING_TIME_ID,
+        "items": [{
+            "id": "ITEM-PLACEHOLDER",
+            "name": name,
+            "sequence": 1,
+            "availableStatus": "AVAILABLE",
+            "price": price_cents,  # 分
+            "description": "Autogenerated placeholder to pass validation.",
+            "photos": [photo_url] if photo_url else [],
+            "modifierGroups": []
+        }]
+    }]
+
+def _build_selling_times():
+    """默认一个 All Day（SSA 要求：含 startTime/endTime，且使用 OpenPeriod）"""
+    return [{
+        "id": SELLING_TIME_ID,
+        "name": "All Day",
+        "sequence": 1,
+        "serviceHours": {
+            d: {
+                "openPeriodType": "OpenPeriod",
+                "periods": [{"startTime": "00:00", "endTime": "23:59"}]
+            } for d in DAYS
+        },
+        "startTime": "1000-01-01 00:00:00",
+        "endTime":   "9999-12-31 23:59:59"
+    }]
+
+def _build_payload(menu, grab_mid, pmid):
+    effective_mid = grab_mid or (menu.merchant_id or "")
+    effective_pmid = pmid or (menu.partner_merchant_id or "")
+
+    selling_times = _build_selling_times()
+    categories = _build_categories_from_db(menu)
+    if not categories:
+        categories = _build_placeholder_category()
+
+    return {
+        "merchantID": effective_mid,
+        "partnerMerchantID": effective_pmid,
+        "currency": {
+            "code": menu.currency_code or "SGD",
+            "symbol": menu.currency_symbol or "S$",
+            "exponent": menu.currency_exponent or 2
+        },
+        "sellingTimes": selling_times,
+        "categories": categories
+    }
+
+def _maybe_require_bearer():
+    """可选启用 Bearer 校验：
+       grab.menu_require_auth ∈ {1, true, True} 时启用；比较 grab.oauth.token"""
+    req = str(_icp_get('grab.menu_require_auth', '0') or '0').strip().lower()
+    require = req in ('1', 'true', 'yes')
+    if not require:
+        return None  # 不校验
+
+    want = (_icp_get('grab.oauth.token') or '').strip()
+    got = (request.httprequest.headers.get('Authorization', '') or '').strip()
+    if not want:
+        return None  # 没配置预期 token，则不拦截
+
+    if not got.startswith('Bearer '):
+        return request.make_response(json.dumps({"error": "Unauthorized"}, ensure_ascii=False),
+                                     status=401, headers=[('Content-Type','application/json; charset=utf-8')])
+    token = got.split(' ', 1)[1].strip()
+    if token != want:
+        return request.make_response(json.dumps({"error": "Unauthorized"}, ensure_ascii=False),
+                                     status=401, headers=[('Content-Type','application/json; charset=utf-8')])
+    return None
+
+# -----------------------------
+# Controller
+# -----------------------------
+
+class GrabMenuController(http.Controller):
+
+    @http.route(
+        [
+            '/grab/get_menu', '/grab/get_menu/',                     # 支持有/无尾斜杠
+            '/grab/merchant/menu', '/grab/merchant/menu/',           # 另一路径同样支持
+        ],
+        type='http',
+        auth='public',
+        csrf=False,
+        methods=['GET', 'POST'],                                      # 允许 POST（导出校验会 POST）
+        website=False
+    )
+    def get_menu(self, **kwargs):
+        # （可选）启用 Bearer 校验（用系统参数控制）
+        auth_resp = _maybe_require_bearer()
+        if auth_resp:
+            return auth_resp
+
+        # 读取参数（querystring 优先；若缺失则 JSON body 兜底）
+        grab_mid = _get_param('merchantID', 'merchantId', 'mid', default="")
+        pmid = _get_param('partnerMerchantID', 'partnerMerchantId', 'pmid', default="")
+
+        Menu = request.env['grab.menu'].sudo()
+
+        # 先用 pmid 找；找不到再用 grab_mid 找
+        menu = False
+        if pmid:
+            menu = Menu.search([('partner_merchant_id', '=', pmid)], limit=1)
+        if not menu and grab_mid:
+            menu = Menu.search([('merchant_id', '=', grab_mid)], limit=1)
+
+        # 没找到就创建（SSA 规范：GetMenu 时我们才拿到 grab merchant id；staging 下可能变化）
+        if not menu:
+            menu = Menu.create({
+                'name': f"Grab Menu ({pmid or grab_mid or 'NEW'})",
+                'merchant_id': grab_mid,
+                'partner_merchant_id': pmid
+            })
+        else:
+            # 回写最新映射：staging 下 grab_mid 可能变化；pmid 若历史为空也写回
+            vals = {}
+            if grab_mid and menu.merchant_id != grab_mid:
+                vals['merchant_id'] = grab_mid
+            if pmid and not menu.partner_merchant_id:
+                vals['partner_merchant_id'] = pmid
+            if vals:
+                menu.write(vals)
+
+        payload = _build_payload(menu, grab_mid, pmid)
+        return request.make_response(
+            json.dumps(payload, ensure_ascii=False),
+            headers=[('Content-Type', 'application/json; charset=utf-8')]
+        )
