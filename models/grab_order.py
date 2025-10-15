@@ -20,6 +20,7 @@ class GrabOrder(models.Model):
     state_message = fields.Char('Order State Message')
     state_code = fields.Char('Order State Code')
     driver_eta = fields.Integer('Driver ETA (seconds)')
+    is_mex_edit_order = fields.Boolean('Is MEX Edit Order', default=False)
 
     # Currency fields
     currency_code = fields.Char('Currency Code')
@@ -63,19 +64,16 @@ class GrabOrder(models.Model):
     @api.depends('receiver')
     def _compute_receiver_address(self):
         for rec in self:
-            if rec.receiver and rec.receiver.get('address'):
-                rec.receiver_address = rec.receiver['address'].get('address', '')
-            else:
-                rec.receiver_address = ''
-    
+            rec.receiver_address = (rec.receiver or {}).get('address') if rec.receiver else ''
+
+    # ========= Buttons to push status to Grab =========
     def action_push_order_ready(self):
-        # 这个方法是 "Mark as Ready"
         self.ensure_one()
-        client_id = self.env['ir.config_parameter'].sudo().get_param('grab.client_id')
-        client_secret = self.env['ir.config_parameter'].sudo().get_param('grab.client_secret')
-        status_code, resp_text = push_grab_order_ready(self.grab_order_id, client_id, client_secret, mark_status=1)
+        if not self.grab_order_id:
+            raise UserError('Missing Grab Order ID')
+        status_code, resp_text = push_grab_order_ready(self.env, self.grab_order_id)
         if status_code == 204:
-            msg = "Order marked as ready successfully (204 No Content)"
+            msg = "Success: Grab acknowledged order ready."
         else:
             msg = f"Failed: {status_code} {resp_text}"
         return {
@@ -88,59 +86,39 @@ class GrabOrder(models.Model):
                 'sticky': False,
             }
         }
+
     def action_push_order_completed(self):
         self.ensure_one()
         client_id = self.env['ir.config_parameter'].sudo().get_param('grab.client_id')
         client_secret = self.env['ir.config_parameter'].sudo().get_param('grab.client_secret')
-        status_code, resp_text = push_grab_order_ready(self.grab_order_id, client_id, client_secret, mark_status=2)
-        if status_code == 204:
-            # 成功后把Odoo订单状态也设为完成
-            self.write({'order_state': 'COMPLETED'})  # 假设你的字段名是 order_state
-            msg = "Order marked as completed successfully (204 No Content)"
-            msg_type = 'success'
-        else:
-            msg = f"Failed: {status_code} {resp_text}"
-            msg_type = 'danger'
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Push Order Status to Grab',
-                'message': msg,
-                'type': msg_type,
-                'sticky': False,
-            }
-        }
+        # TODO: implement push completed if needed
+        raise UserError('Not implemented')
 
 class GrabOrderLine(models.Model):
     _name = 'grab.order.line'
     _description = 'Grab Order Line'
 
     order_id = fields.Many2one('grab.order', string='Order')
-    item_id = fields.Many2one('grab.menu.item', string='Menu Item')
-    grab_item_id = fields.Char('Grab Item ID')
-    quantity = fields.Integer('Quantity')
-    price = fields.Float('Price')
-    tax = fields.Float('Tax')
-    specifications = fields.Char('Specifications')
-    # outOfStockInstruction、modifiers 推荐用Json存
-    out_of_stock_instruction = fields.Json('Out of Stock Instruction')
-    modifiers = fields.Json('Modifiers')
-    modifier_names = fields.Char('Modifiers (Names)', compute='_compute_modifier_names', store=False)
 
-    @api.depends('modifiers')
-    def _compute_modifier_names(self):
-        for rec in self:
-            names = []
-            if rec.modifiers:
-                for m in rec.modifiers:
-                    mod_code = m.get('id')
-                    if mod_code:
-                        # 用 code 字段找
-                        modifier = self.env['grab.menu.modifier'].sudo().search([('modifier_code', '=', mod_code)], limit=1)
-                        if modifier:
-                            names.append(modifier.name)
-            rec.modifier_names = ', '.join(names) if names else ''
+    # 保留为 Char，避免类型冲突
+    item_id = fields.Char('Item ID')  # 这是外部/Grab的item标识，字符串
+
+    # 如果你需要关联到 Odoo 的产品或你自定义的抓取模型，就新增一个不同名字的 M2O
+    product_id = fields.Many2one('product.product', string='Linked Product')  # 或者 'grab.menu.item'
+    name = fields.Char('Name')
+    short_name = fields.Char('Short Name')
+    description = fields.Char('Description')
+    quantity = fields.Integer('Quantity')
+    unit_price = fields.Float('Unit Price')
+    total_price = fields.Float('Total Price')
+    currency_code = fields.Char('Currency Code')
+    currency_symbol = fields.Char('Currency Symbol')
+    currency_exponent = fields.Integer('Currency Exponent')
+
+    # JSON fields for options/modifiers
+    options = fields.Json('Options')
+    selected_options = fields.Json('Selected Options')
+    images = fields.Json('Images')
 
 class GrabOrderCampaign(models.Model):
     _name = 'grab.order.campaign'
@@ -157,7 +135,6 @@ class GrabOrderCampaign(models.Model):
     campaign_name_for_mex = fields.Char('Campaign Name For Mex')
     applied_item_ids = fields.Json('Applied Item IDs')
     free_item = fields.Json('Free Item')
-    # 还有id等字段，参考payload继续加
     campaign_id = fields.Char('Grab Campaign ID')
 
 class GrabOrderPromo(models.Model):

@@ -14,3 +14,6 @@ access_grab_menu_modifier,grab.menu.modifier,model_grab_menu_modifier,,1,1,1,1
 
 access_grab_order_ready_time_wizard,access_grab_order_ready_time_wizard,model_grab_order_ready_time_wizard,,1,1,1,1
 access_grab_order_ready_time_wizard,access_grab_order_ready_time_wizard,model_grab_order_ready_time_wizard,base.group_user,1,1,1,1
+
+access_grab_price_wizard,access_grab_price_wizard,model_grab_price_wizard,,1,1,1,1
+access_grab_price_wizard_user,access_grab_price_wizard_user,model_grab_price_wizard,base.group_user,1,1,1,1

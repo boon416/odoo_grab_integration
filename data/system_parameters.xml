@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- System parameter to include tax in prices sent to Grab -->
+        <record id="grab_price_tax_included" model="ir.config_parameter">
+            <field name="key">grab.price_tax_included</field>
+            <field name="value">1</field>
+        </record>
+    </data>
+</odoo>

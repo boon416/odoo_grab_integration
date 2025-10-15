@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit Product Template Form View to Add Grab Tab -->
+    <record id="product_template_form_view_grab" model="ir.ui.view">
+        <field name="name">product.template.form.grab</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Grab" name="grab_settings">
+                    <group>
+                        <group string="Grab Integration Status">
+                            <field name="grab_menu_item_count" readonly="1"/>
+                            <field name="grab_sync_enabled"/>
+                            <field name="grab_available"/>
+                        </group>
+                        <group string="Quick Actions">
+                            <button name="action_view_grab_menu_items"
+                                    type="object"
+                                    string="View Grab Menu Items"
+                                    class="btn-primary"
+                                    invisible="grab_menu_item_count == 0"/>
+                            <button name="action_create_grab_menu_item"
+                                    type="object"
+                                    string="Create Grab Menu Item"
+                                    class="btn-secondary"/>
+                        </group>
+                    </group>
+                    
+                    <separator string="Grab Pricing Settings"/>
+                    <group>
+                        <group string="Custom Grab Pricing">
+                            <field name="use_grab_price"/>
+                            <field name="grab_price" 
+                                   invisible="not use_grab_price"
+                                   required="use_grab_price"/>
+                            <field name="gst_rate" 
+                                   invisible="not use_grab_price"/>
+                            <field name="grab_price_with_gst" 
+                                   invisible="not use_grab_price"
+                                   readonly="1"/>
+                        </group>
+                        <group string="Price Comparison">
+                            <field name="list_price" readonly="1" string="Product List Price"/>
+                            <label for="grab_price_with_gst" string="Final Grab Price"/>
+                            <div>
+                                <field name="grab_price_with_gst" readonly="1" class="oe_inline"/>
+                                <span class="text-muted"> (incl. GST)</span>
+                            </div>
+                        </group>
+                    </group>
+                    
+                    <separator string="Sync Actions" invisible="grab_menu_item_count == 0"/>
+                    <group invisible="grab_menu_item_count == 0">
+                        <group string="Sync to Grab Items">
+                            <button name="action_sync_to_grab_items"
+                                    type="object"
+                                    string="Sync Settings to All Grab Items"
+                                    class="btn-warning"
+                                    confirm="This will update all linked Grab menu items with the current product settings. Continue?"/>
+                        </group>
+                        <group string="Copy from Grab Items">
+                            <button name="action_copy_from_grab_item"
+                                    type="object"
+                                    string="Copy Settings from First Grab Item"
+                                    class="btn-info"/>
+                        </group>
+                    </group>
+                    
+                    <separator string="Linked Grab Menu Items" invisible="grab_menu_item_count == 0"/>
+                    <field name="grab_menu_item_ids" invisible="grab_menu_item_count == 0" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="category_id"/>
+                            <field name="use_grab_price"/>
+                            <field name="grab_price" optional="show"/>
+                            <field name="grab_price_with_gst" optional="show"/>
+                            <field name="available_status"/>
+                        </list>
+                    </field>
+                    
+                    <div class="alert alert-info" role="alert" invisible="grab_menu_item_count > 0">
+                        <strong>No Grab Menu Items Found</strong><br/>
+                        This product is not yet linked to any Grab menu items. 
+                        Click "Create Grab Menu Item" to start selling this product on Grab.
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Add Grab fields to product tree view (optional) -->
+    <record id="product_template_tree_view_grab" model="ir.ui.view">
+        <field name="name">product.template.tree.grab</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='list_price']" position="after">
+                <field name="grab_menu_item_count" string="Grab Items" optional="show"/>
+                <field name="use_grab_price" optional="hide"/>
+                <field name="grab_price_with_gst" string="Grab Price" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Add search filters for Grab integration -->
+    <record id="product_template_search_view_grab" model="ir.ui.view">
+        <field name="name">product.template.search.grab</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='inactive']" position="after">
+                <separator/>
+                <filter string="Has Grab Items" name="has_grab_items" 
+                        domain="[('grab_menu_item_count', '>', 0)]"/>
+                <filter string="No Grab Items" name="no_grab_items" 
+                        domain="[('grab_menu_item_count', '=', 0)]"/>
+                <filter string="Available on Grab" name="grab_available" 
+                        domain="[('grab_available', '=', True)]"/>
+                <filter string="Unavailable on Grab" name="grab_unavailable" 
+                        domain="[('grab_available', '=', False)]"/>
+                <filter string="Custom Grab Price" name="custom_grab_price" 
+                        domain="[('use_grab_price', '=', True)]"/>
+                <filter string="Grab Sync Enabled" name="grab_sync_enabled" 
+                        domain="[('grab_sync_enabled', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

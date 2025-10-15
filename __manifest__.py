@@ -6,9 +6,12 @@
     'depends': ['base', 'product', 'website_sale'],
     'data': [
         'security/ir.model.access.csv',
+        'data/system_parameters.xml',
         'views/order_ready_time_wizard.xml',
         'views/grab_view.xml',
         'views/grab_menu_views.xml',
+        'views/grab_price_wizard_views.xml',
+        'views/product_template_grab_views.xml',
     ],
     'installable': True,
     'application': True,

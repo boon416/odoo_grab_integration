@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Grab Price Wizard Views -->
+    <record id="view_form_grab_price_wizard" model="ir.ui.view">
+        <field name="name">grab.price.wizard.form</field>
+        <field name="model">grab.price.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Set Grab Prices">
+                <group>
+                    <group string="Pricing Strategy">
+                        <field name="price_strategy" widget="radio"/>
+                        <field name="markup_percentage" invisible="price_strategy != 'markup'"/>
+                        <field name="custom_base_price" invisible="price_strategy != 'custom'"/>
+                    </group>
+                    <group string="GST Settings">
+                        <field name="gst_rate"/>
+                    </group>
+                </group>
+                <group string="Selected Items">
+                    <field name="item_ids" nolabel="1" readonly="1"/>
+                </group>
+                <footer>
+                    <button name="action_preview_prices" type="object" string="Preview" class="btn-secondary"/>
+                    <button name="action_apply_prices" type="object" string="Apply Prices" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Price Preview Views -->
+    <record id="view_tree_grab_price_preview" model="ir.ui.view">
+        <field name="name">grab.price.preview.tree</field>
+        <field name="model">grab.price.preview</field>
+        <field name="arch" type="xml">
+            <list string="Price Preview" create="false" edit="false" delete="false">
+                <field name="item_name"/>
+                <field name="current_price"/>
+                <field name="new_grab_price"/>
+                <field name="gst_amount"/>
+                <field name="final_price"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_grab_price_wizard" model="ir.actions.act_window">
+        <field name="name">Set Grab Prices</field>
+        <field name="res_model">grab.price.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Menu Items -->
+    <menuitem id="menu_grab_price_wizard"
+              name="Bulk Price Management"
+              parent="menu_grab_menu_root"
+              action="action_grab_price_wizard"
+              sequence="50"/>
+
+</odoo>

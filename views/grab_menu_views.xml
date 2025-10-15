@@ -188,7 +188,10 @@
             <list>
                 <field name="product_id"/>
                 <field name="name"/>
-                <field name="price"/>
+                <field name="price" string="Product Price"/>
+                <field name="use_grab_price"/>
+                <field name="grab_price" optional="show"/>
+                <field name="grab_price_with_gst" string="Grab Price (GST)" optional="show"/>
                 <field name="product_category_id"/>
                 <field name="available_status"/>
                 <field name="photo" widget="image"/>
@@ -206,14 +209,33 @@
                             type="object"
                             string="同步Modifier"
                             class="oe_highlight"/>
+                    <button name="action_copy_product_price_to_grab"
+                            type="object"
+                            string="Copy Product Price"
+                            class="btn-secondary"/>
+                    <button name="action_set_grab_price_from_product"
+                            type="object"
+                            string="Set Grab Price"
+                            class="btn-secondary"/>
                 </header>
                 <group>
-                    <field name="product_id"/>
-                    <field name="name"/>
-                    <field name="price"/>
-                    <field name="sequence"/>
-                    <field name="available_status"/>
-                    <field name="product_category_id"/>
+                    <group string="Basic Information">
+                        <field name="product_id"/>
+                        <field name="name"/>
+                        <field name="price" string="Product Price"/>
+                        <field name="sequence"/>
+                        <field name="available_status"/>
+                        <field name="product_category_id"/>
+                    </group>
+                    <group string="Grab Pricing">
+                        <field name="use_grab_price"/>
+                        <field name="grab_price" invisible="not use_grab_price"/>
+                        <field name="gst_rate" invisible="not use_grab_price"/>
+                        <field name="grab_price_with_gst" invisible="not use_grab_price" readonly="1"/>
+                    </group>
+                </group>
+                <group string="Description">
+                    <field name="website_description" widget="html" nolabel="1"/>
                 </group>
                 <notebook>
                     <page string="Modifier Groups">

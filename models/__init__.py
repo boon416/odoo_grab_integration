@@ -6,3 +6,4 @@ from . import order_ready_time_wizard
 from . import menu_sync_log
 from . import push_menu_log
 from . import integration_status_log
+from . import product_template_grab
