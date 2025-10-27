@@ -55,7 +55,7 @@ class GrabOrderStatusWebhookController(http.Controller):
             rec = Order.search([('grab_order_id', '=', order_id)], limit=1)
 
             if not rec:
-                # Best Practice：不要假装成功，返回 409 让 Grab 稍后重试或你先补拉
+                # Best Practice: Return 409 to let Grab retry later or use manual sync
                 _logger.warning("OrderState for unknown orderID=%s payload=%s", order_id, data)
                 return _json_response({"success": False, "reason": "order_not_found"}, status=409)
 

@@ -1,6 +1,7 @@
 from . import grab_data
 from . import grab_menu
 from . import grab_order
+from . import grab_order_sync
 from . import grab_client
 from . import order_ready_time_wizard
 from . import menu_sync_log

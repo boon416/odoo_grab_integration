@@ -191,6 +191,7 @@ class GrabMenuItem(models.Model):
     photo = fields.Image(string="Photo", related='product_id.image_1920', readonly=True, store=False)
 
     # 展示字段
+    grab_item_code = fields.Char('Grab Item Code')
     name = fields.Char(string="Product Name", related='product_id.name', store=False, readonly=True)
     price = fields.Float(related='product_id.list_price', store=False, readonly=True)
     website_description = fields.Html(string="Website Description",

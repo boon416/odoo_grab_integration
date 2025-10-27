@@ -1,8 +1,11 @@
 # models/grab_order_sync.py
 import requests
+import logging
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from datetime import date, timedelta
+
+_logger = logging.getLogger(__name__)
 
 class GrabOrderSync(models.TransientModel):
     _name = 'grab.order.sync.wizard'
@@ -39,68 +42,75 @@ class GrabOrderSync(models.TransientModel):
                 raise UserError(_("Grab list orders failed: %s %s") % (resp.status_code, resp.text))
             payload = resp.json() or {}
             orders = payload.get('orders') or []
-            # 3) 复用“提交订单”解析逻辑，把单落地
+            # 3) 复用"提交订单"解析逻辑，把单落地
             for order_json in orders:
-                self.env['grab.order']._upsert_from_grab_json(order_json)  # 见下方方法
+                try:
+                    order_id = order_json.get('orderID')
+                    self.env['grab.order']._upsert_from_grab_json(order_json)
+                    _logger.debug("Processed order: %s", order_id)
+                except Exception as e:
+                    _logger.error("Failed to process order %s: %s", order_json.get('orderID', 'UNKNOWN'), e)
             any_count += len(orders)
             if not payload.get('more'):
                 break
             page += 1
 
         # 提示
+        _logger.info("Grab order sync completed: Total orders=%s for date=%s", any_count, self.sync_date)
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _("Grab Orders Sync"),
-                'message': _("Synced %s orders for %s") % (any_count, self.sync_date),
+                'title': _("Grab Orders Sync Complete"),
+                'message': _("Successfully synced %s orders for %s") % (any_count, self.sync_date),
                 'type': 'success',
+                'sticky': False,
             }
         }
 
-# models/grab_order.py（新增一个可复用的 upsert 方法）
-from odoo import models, fields, api
+# # models/grab_order.py（新增一个可复用的 upsert 方法）
+# from odoo import models, fields, api
 
-class GrabOrder(models.Model):
-    _name = 'grab.order'
-    # ... 省略字段（你已有）
+# class GrabOrder(models.Model):
+#     _name = 'grab.order'
+#     # ... 省略字段（你已有）
 
-    def _upsert_from_grab_json(self, data):
-        """把 Grab 的订单 JSON 写进 grab.order。
-        这里直接复用你 submit webhook 的写入逻辑，确保幂等。"""
-        self = self.sudo()
-        order_id = data.get('orderID')
-        vals = {
-            'grab_order_id': order_id,
-            'short_order_number': data.get('shortOrderNumber'),
-            'merchant_id': data.get('merchantID'),
-            'partner_merchant_id': data.get('partnerMerchantID'),
-            'payment_type': data.get('paymentType'),
-            'cutlery': bool(data.get('cutlery')),
-            # 时间字段解析同你 webhook 控制器的 _dt_iso_to_dt
-            # ...
-            'order_state': data.get('orderState') or '',
-            'feature_flags': data.get('featureFlags'),
-            'receiver': data.get('receiver'),
-            'price_info': data.get('price'),
-            'raw_json': data,
-        }
-        rec = self.search([('grab_order_id', '=', order_id)], limit=1)
-        if rec:
-            rec.write(vals)
-            rec.line_ids.unlink(); rec.campaign_ids.unlink(); rec.promo_ids.unlink()
-        else:
-            rec = self.create(vals)
-        for item in (data.get('items') or []):
-            self.env['grab.order.line'].create({
-                'order_id': rec.id,
-                'grab_item_id': item.get('grabItemID'),
-                'grab_item_code': item.get('id'),
-                'quantity': item.get('quantity'),
-                'price': item.get('price'),
-                'tax': item.get('tax') or 0,
-                'specifications': item.get('specifications') or '',
-                'modifiers': item.get('modifiers') or [],
-            })
-        # promos/campaigns 同你当前逻辑
-        return rec
+#     def _upsert_from_grab_json(self, data):
+#         """把 Grab 的订单 JSON 写进 grab.order。
+#         这里直接复用你 submit webhook 的写入逻辑，确保幂等。"""
+#         self = self.sudo()
+#         order_id = data.get('orderID')
+#         vals = {
+#             'grab_order_id': order_id,
+#             'short_order_number': data.get('shortOrderNumber'),
+#             'merchant_id': data.get('merchantID'),
+#             'partner_merchant_id': data.get('partnerMerchantID'),
+#             'payment_type': data.get('paymentType'),
+#             'cutlery': bool(data.get('cutlery')),
+#             # 时间字段解析同你 webhook 控制器的 _dt_iso_to_dt
+#             # ...
+#             'order_state': data.get('orderState') or '',
+#             'feature_flags': data.get('featureFlags'),
+#             'receiver': data.get('receiver'),
+#             'price_info': data.get('price'),
+#             'raw_json': data,
+#         }
+#         rec = self.search([('grab_order_id', '=', order_id)], limit=1)
+#         if rec:
+#             rec.write(vals)
+#             rec.line_ids.unlink(); rec.campaign_ids.unlink(); rec.promo_ids.unlink()
+#         else:
+#             rec = self.create(vals)
+#         for item in (data.get('items') or []):
+#             self.env['grab.order.line'].create({
+#                 'order_id': rec.id,
+#                 'grab_item_id': item.get('grabItemID'),
+#                 'grab_item_code': item.get('id'),
+#                 'quantity': item.get('quantity'),
+#                 'price': item.get('price'),
+#                 'tax': item.get('tax') or 0,
+#                 'specifications': item.get('specifications') or '',
+#                 'modifiers': item.get('modifiers') or [],
+#             })
+#         # promos/campaigns 同你当前逻辑
+#         return rec

@@ -226,6 +226,7 @@
                         <field name="sequence"/>
                         <field name="available_status"/>
                         <field name="product_category_id"/>
+                        <field name="grab_item_code"/>
                     </group>
                     <group string="Grab Pricing">
                         <field name="use_grab_price"/>
@@ -346,8 +347,10 @@
         <field name="arch" type="xml">
             <list>
                 <field name="order_id"/>
-                <field name="item_id"/> <!-- 这里会显示item名字，如果item_id是Many2one-->
-                <field name="modifier_names"/>
+                <field name="grab_item_id"/> <!-- Grab Item ID (字符串) -->
+                <!-- <field name="name"/>
+                <field name="product_id"/> -->
+                <field name="product_name"/>
                 <field name="quantity"/>
                 <field name="price"/>
                 <field name="tax"/>
@@ -362,12 +365,16 @@
             <form>
                 <group>
                     <field name="order_id"/>
-                    <field name="item_id"/> <!-- 同上，Many2one的话，显示item名字，可以弹出选项-->
-                    <field name="modifier_names"/>
+                    <field name="grab_item_id"/> <!-- Grab Item ID (字符串) -->
+                    <field name="grab_item_code"/>
+                    <!-- <field name="name"/>
+                    <field name="product_id"/>                     -->
+                    <field name="product_name"/>
                     <field name="quantity"/>
                     <field name="price"/>
                     <field name="tax"/>
                     <field name="specifications"/>
+                    <field name="out_of_stock_instruction"/>
                 </group>
             </form>
         </field>
@@ -442,6 +449,24 @@
             </graph>
         </field>
     </record>
+    
+    <!-- Order Sync Wizard View -->
+    <record id="view_form_grab_order_sync_wizard" model="ir.ui.view">
+        <field name="name">grab.order.sync.wizard.form</field>
+        <field name="model">grab.order.sync.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="sync_date"/>
+                </group>
+                <footer>
+                    <button name="action_sync" string="Sync Orders" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
     <record id="view_search_grab_order" model="ir.ui.view">
         <field name="name">grab.order.search</field>
         <field name="model">grab.order</field>
@@ -511,6 +536,12 @@
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
+    <!-- <record id="action_grab_order_sync_wizard" model="ir.actions.act_window">
+        <field name="name">Sync Grab Orders</field>
+        <field name="res_model">grab.order.sync.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record> -->
     <record id="action_grab_order_status" model="ir.actions.act_window">
         <field name="name">Order Status</field>
         <field name="res_model">grab.order</field>
@@ -536,4 +567,5 @@
     <menuitem id="menu_grab_order_campaign" name="Campaigns" parent="menu_grab_order_root" action="action_grab_order_campaign" sequence="3"/>
     <menuitem id="menu_grab_order_promo" name="Promos" parent="menu_grab_order_root" action="action_grab_order_promo" sequence="4"/>
     <menuitem id="menu_grab_order_status" name="Order Status" parent="menu_grab_order_root" action="action_grab_order_status" sequence="5"/>
+    <!-- <menuitem id="menu_grab_order_sync" name="Sync Orders" parent="menu_grab_order_root" action="action_grab_order_sync_wizard" sequence="6"/> -->
 </odoo>
